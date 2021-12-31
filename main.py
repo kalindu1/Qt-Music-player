@@ -10,25 +10,23 @@
 
 from pygame import mixer
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import *
+
+import sys
 
 mixer.init()
-
 
 file = ""
 playing = False
 
+
 class Ui_mainWindow(object):
-
     def setupUi(self, mainWindow):
-        global file
-
         mainWindow.setObjectName("mainWindow")
         mainWindow.resize(570, 346)
         icon = QtGui.QIcon()
         icon.addPixmap(
-            QtGui.QPixmap(
-                "Res/music player.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off
+            QtGui.QPixmap("Res/music player.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off
         )
         mainWindow.setWindowIcon(icon)
 
@@ -36,6 +34,9 @@ class Ui_mainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.Play_button = QtWidgets.QPushButton(self.centralwidget)
         self.Play_button.setGeometry(QtCore.QRect(380, 210, 75, 71))
+
+        self.Play_button.setText("")
+
         icon1 = QtGui.QIcon()
         icon1.addPixmap(
             QtGui.QPixmap("Res/play.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off
@@ -47,6 +48,7 @@ class Ui_mainWindow(object):
         self.Play_button.setObjectName("Play_button")
         self.Pause_button = QtWidgets.QPushButton(self.centralwidget)
         self.Pause_button.setGeometry(QtCore.QRect(290, 210, 75, 71))
+        self.Pause_button.setText("")
 
         icon2 = QtGui.QIcon()
         icon2.addPixmap(
@@ -59,6 +61,7 @@ class Ui_mainWindow(object):
         self.Pause_button.setObjectName("Pause_button")
         self.Stop_button = QtWidgets.QPushButton(self.centralwidget)
         self.Stop_button.setGeometry(QtCore.QRect(470, 210, 75, 71))
+        self.Stop_button.setText("")
 
         icon3 = QtGui.QIcon()
         icon3.addPixmap(
@@ -126,6 +129,7 @@ class Ui_mainWindow(object):
         self.actionOpen.setObjectName("actionOpen")
         self.actionExit = QtWidgets.QAction(mainWindow)
         self.actionExit.setObjectName("actionExit")
+
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionExit)
         self.menuHelp.addAction(self.actionAbout_us)
@@ -134,54 +138,91 @@ class Ui_mainWindow(object):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(mainWindow)
-
         QtCore.QMetaObject.connectSlotsByName(mainWindow)
 
         print(file)
-        
+
         # Check if the buttons are pressed
 
         self.Play_button.clicked.connect(self.Play_button_clicked)
-        self.Add_button.clicked.connect(self.Add_button_clicked)
-
+        self.Pause_button.clicked.connect(self.Pause_button_clicked)
+        self.Add_button.clicked.connect(self.Open_button_clicked)
+        self.Stop_button.clicked.connect(self.Stop_button_clicked)
+        
+        self.actionOpen.triggered.connect(lambda: self.Open_button_clicked())
+        self.actionExit.triggered.connect(lambda: sys.exit())
+        self.actionAbout_us.triggered.connect(lambda: self.About_us_button_clicked())
+        self.actionHelp.triggered.connect(lambda: self.Help_button_clicked())
 
     def retranslateUi(self, mainWindow):
         _translate = QtCore.QCoreApplication.translate
         mainWindow.setWindowTitle(_translate("mainWindow", "MainWindow"))
-
         self.Song_name.setText(_translate("mainWindow", "Test"))
         self.Add_button.setText(_translate("mainWindow", "Add"))
         self.menuFile.setTitle(_translate("mainWindow", "File"))
         self.menuHelp.setTitle(_translate("mainWindow", "Help"))
         self.actionAbout_us.setText(_translate("mainWindow", "About us"))
+        self.actionAbout_us.setStatusTip(_translate("mainWindow", "About us"))
         self.actionHelp.setText(_translate("mainWindow", "Help"))
+        self.actionHelp.setStatusTip(_translate("mainWindow", "Help"))
+        self.actionHelp.setShortcut(_translate("mainWindow", "Ctrl+H"))
         self.actionOpen.setText(_translate("mainWindow", "Open"))
+        self.actionOpen.setStatusTip(_translate("mainWindow", "Open a file"))
+        self.actionOpen.setShortcut(_translate("mainWindow", "Ctrl+O"))
         self.actionExit.setText(_translate("mainWindow", "Exit"))
-    
-    def Add_button_clicked(self):
+        self.actionExit.setShortcut(_translate("mainWindow", "Ctrl+S"))
+
+    def Open_button_clicked(self):
         global file
-        
+
         file = QFileDialog.getOpenFileName()
         print(file)
+
+    def About_us_button_clicked(self):
+        dialog = QMessageBox(mainWindow)
+        dialog.setText("Hi, I'm Kalindu. I made this application. Hope you enjoy it.")
+        dialog.setWindowTitle("About Us")
+        dialog.setIcon(QMessageBox.Information)
+
+        # icons types : crtitcal, warning, information, question
+
+        dialog.exec_()
+
+    def Help_button_clicked(self):
+        dialog = QMessageBox(mainWindow)
+        dialog.setText("Load a song from open and click the play button.")
+        dialog.setIcon(QMessageBox.Information)
+        dialog.setWindowTitle("Help")
+        dialog.exec_()
+    
+    def Pause_button_clicked(self):
+        global playing        
+        
+        if playing:
+            mixer.music.pause()
+            playing = False
+        else:
+            mixer.music.unpause()
+            playing = True
 
     def Play_button_clicked(self):
         global file
         global playing
 
-        if playing:
-            mixer.music.pause()
-            playing = False
+        if playing == False:
+            mixer.music.unpause()
+            playing = True
 
         else:
-            # try to play a song 
+            # try to play a song
             try:
-                file = file[0]
+                playing_file = file[0]
 
-                song = mixer.music.load(file)
+                mixer.music.load(playing_file)
                 mixer.music.play()
-    
+
                 playing = True
-            
+
             #  I usually don't like to use just a "except" but two errors can rais
             #       1 IndexError
             #       2 pygame.error
@@ -191,6 +232,8 @@ class Ui_mainWindow(object):
                 print("no file loaded")
                 self.Song_name.setText("No file")
 
+    def Stop_button_clicked(self):
+        mixer.music.stop()
 
 if __name__ == "__main__":
     import sys
