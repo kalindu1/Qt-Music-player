@@ -10,6 +10,9 @@
 from pygame import mixer
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
+from PyQt5.QtCore import QUrl
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+
 from mutagen.mp3 import MP3
 import sys
 import time
@@ -19,6 +22,7 @@ mixer.init()
 
 file = ""
 playing = False
+first_time_playing = True
 Volume_value = 100
 Song_time = 0
 Song_current_time = 0
@@ -195,8 +199,9 @@ class Ui_mainWindow(object):
         # About the songs Progress
         self.SongProgress.valueChanged.connect(self.fast_forward)
 
-        if playing == True:
-            self.Get_current_time()
+        self.Player = QMediaPlayer()
+
+        self.Player.positionChanged.connect(self.Get_current_time)
 
     ##########################################################################################################
     ##########################################################################################################
@@ -226,8 +231,9 @@ class Ui_mainWindow(object):
 
     def fast_forward(self):
         val = self.SongProgress.value()
+        val = val * 1000
         try:
-            mixer.music.play(1, val)
+            self.Player.setPosition(val)
         except:
             self.Song_name.setText("No file")
 
@@ -235,9 +241,7 @@ class Ui_mainWindow(object):
 
     def Open_button_clicked(self):
         global file
-
-        file = QFileDialog.getOpenFileName()
-        print(file)
+        file = QFileDialog.getOpenFileName(None,None,None,"mp3(*.mp3)")
 
         #  call the get length of file function to get and set the file length to the progress bar
         self.Get_length_of_file()
@@ -263,66 +267,63 @@ class Ui_mainWindow(object):
         dialog.setWindowTitle("Help")
         dialog.exec_()
 
-    ##############################################################################################################
+    #############################################################################################################
 
     def Pause_button_clicked(self):
         global playing
 
         if playing:
-            mixer.music.pause()
+            self.Player.pause()
             playing = False
         else:
-            mixer.music.unpause()
+            # mixer.music.unpause()
             playing = True
+            self.Player.play()
 
     ###############################################################################################################
 
     def Play_button_clicked(self):
         global file
         global playing
-        global Song_time
+        global first_time_playing
 
-        print(Song_time)
-        # if paused unpauses it
-        if playing == False:
-            mixer.music.unpause()
+        if playing == False and first_time_playing != True:
+            self.Player.pause()
             playing = True
 
-        else:
-            # try to play a song
             try:
-                playing_file = file[0]
+                self.Player.play()
 
-                mixer.music.load(playing_file)
-                mixer.music.play()
-
-                playing = True
-
-            #  I usually don't like to use just a "except" but two errors can rais
-            #       1 IndexError
-            #       2 pygame.error
-            #  Since I can't handel the pygame.error I decided to use just a "except"
             except:
-                # Simple Debug massege
-                print("no file loaded")
                 self.Song_name.setText("No file")
+
+        else:
+            try:
+                Url = QUrl.fromLocalFile(file[0])
+                content = QMediaContent(Url)
+
+                self.Player.setMedia(content)
+                self.Player.play()
+                first_time_playing = False
+
+            except:
+                self.Song_name.setText("No file")
+
 
     ############################################################################################################
 
     def Stop_button_clicked(self):
-        mixer.music.stop()
+        self.Player.stop()
 
-    ############################################################################################################
+    ###########################################################################################################
 
     # change the volume value and set it as the volume
     def Change_volume_value(self):
         global Volume_value
 
         Volume_value = self.VolumeBar.value()
-        print(Volume_value)
 
-        val = float(Volume_value) / 100
-        mixer.music.set_volume(val)
+        self.Player.setVolume(Volume_value)
 
     ############################################################################################################
 
@@ -330,24 +331,31 @@ class Ui_mainWindow(object):
         global file
         global Song_time
 
-        audio = MP3(file[0])
-        Song_time = audio.info.length
+        try:
+            audio = MP3(file[0])
+            Song_time = audio.info.length
 
-        #  Sets the Songs time to SongProgress
-        self.SongProgress.setMaximum(int(Song_time))
+            #  Sets the Songs time to SongProgress
+            self.SongProgress.setMaximum(int(Song_time))
+        except:
+            self.Song_name.setText("No file")
+
+
+
 
     ############################################################################################################
 
-    def Get_current_time(self):
-        global Song_current_time
+    def Get_current_time(self, i):
+        global Song_time
         global playing
 
-        t = int(Song_current_time)
+        # to set the correct value we have to devide it by 1000
+        i = i/1000
+        i = int(i)
 
-        if playing:
-            for i in range(t):
-                self.SongProgress.setValue(i)
-                time.sleep(1)
+        self.SongProgress.blockSignals(True)
+        self.SongProgress.setValue(i)
+        self.SongProgress.blockSignals(False)
 
 
 ############################################################################################################
