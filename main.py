@@ -53,6 +53,7 @@ class Ui_mainWindow(object):
 
         mainWindow.setObjectName("mainWindow")
         mainWindow.resize(570, 376)
+        mainWindow.setWindowTitle("Player")
 
         icon = QtGui.QIcon()
         icon.addPixmap(
@@ -203,7 +204,7 @@ class Ui_mainWindow(object):
 
         # Check if the buttons are pressed
 
-        self.Play_button.clicked.connect(self.Play_button_clicked)
+        self.Play_button.clicked.connect(lambda: self.Play_button_clicked(False))
         self.Pause_button.clicked.connect(self.Pause_button_clicked)
         self.Add_button.clicked.connect(self.Add_button_clicked)
         self.Stop_button.clicked.connect(self.Stop_button_clicked)
@@ -225,6 +226,9 @@ class Ui_mainWindow(object):
         # Qplayer
         self.Player = QMediaPlayer()
         self.Player.positionChanged.connect(self.Get_current_time)
+
+        # listWidget
+        self.listWidget.itemPressed.connect(lambda: self.Play_button_clicked(True))
 
     ##########################################################################################################
     ##########################################################################################################
@@ -253,6 +257,7 @@ class Ui_mainWindow(object):
 
     #############################################################################################################
     #############################################################################################################
+    
 
     ##############################################################################################################
 
@@ -276,6 +281,14 @@ class Ui_mainWindow(object):
 
         for i in range(len(self.playlist.Playlist)):
             print(self.playlist.Playlist[i])
+
+        file2 = file.split("/")
+        file2 = file2[-1]
+
+
+        QListWidgetItem(file2, self.listWidget)
+
+   
 
     def Open_button_clicked(self):
         global file
@@ -330,10 +343,23 @@ class Ui_mainWindow(object):
 
     ###############################################################################################################
 
-    def Play_button_clicked(self):
+    def Play_button_clicked(self, playing_from_playlist):
         global file
         global playing
         global first_time_playing
+        
+        if playing_from_playlist == True:
+            playing = True
+
+            index = self.listWidget.currentRow()
+            song = self.playlist.Playlist[index]
+            
+            Url = QUrl.fromLocalFile(song)
+            content = QMediaContent(Url)
+            
+            self.Player.setMedia(content)
+            self.Player.play()
+        
 
         if playing == False and first_time_playing != True:
             self.Player.pause()
