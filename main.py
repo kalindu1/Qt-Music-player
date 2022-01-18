@@ -12,40 +12,48 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QUrl
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 
+# to get the length of a mp3 file
 from mutagen.mp3 import MP3
 import sys
+
+# for the song's progressbar
 import time
 
 
 name = ""
 file = ""
+Loaded_PList = None
 playing = False
 first_time_playing = True
 Volume_value = 100
 Song_time = 0
 Song_current_time = 0
 
+CurrentSong = 0
 
-class Play_List():
+class Play_List:
     Playlist = []
+    
+    def Empty(self):
+        self.Playlist = []
 
     def Add_to_playlist(self, name):
         self.Playlist.append(name)
 
     def Get_playlist_last_song(self):
         return self.Playlist[-1]
-    
+
     def Save_playlist(self, playlist, name):
         name = name[0]
         name = name + ".list"
-        write_file = open(name , "w")
+        write_file = open(name, "w")
         for i in range(len(playlist.Playlist)):
-            write_file.write(playlist.Playlist[i])
+            write_file.write(playlist.Playlist[i] + "!")
 
 
 class Ui_mainWindow(object):
 
-    playlist =  Play_List()
+    playlist = Play_List()
 
     def setupUi(self, mainWindow):
         global Volume_value
@@ -183,10 +191,14 @@ class Ui_mainWindow(object):
         self.actionSave = QtWidgets.QAction(mainWindow)
         self.actionSave.setObjectName("actionSave")
 
+        self.actionLoadPlaylist = QtWidgets.QAction(mainWindow)
+        self.actionLoadPlaylist.setObjectName("actionLoadPlaylist")
+
         self.actionExit = QtWidgets.QAction(mainWindow)
         self.actionExit.setObjectName("actionExit")
 
         self.menuFile.addAction(self.actionOpen)
+        self.menuFile.addAction(self.actionLoadPlaylist)
         self.menuFile.addAction(self.actionSave)
         self.menuFile.addAction(self.actionExit)
 
@@ -229,6 +241,7 @@ class Ui_mainWindow(object):
 
         # listWidget
         self.listWidget.itemPressed.connect(lambda: self.Play_button_clicked(True))
+        self.actionLoadPlaylist.triggered.connect(self.Load_Playlist_clicked)
 
     ##########################################################################################################
     ##########################################################################################################
@@ -237,29 +250,35 @@ class Ui_mainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         mainWindow.setWindowTitle(_translate("mainWindow", "MainWindow"))
         self.Song_name.setText(_translate("mainWindow", "Test"))
+
         self.Add_button.setText(_translate("mainWindow", "Add"))
+
         self.menuFile.setTitle(_translate("mainWindow", "File"))
         self.menuHelp.setTitle(_translate("mainWindow", "Help"))
+
         self.actionAbout_us.setText(_translate("mainWindow", "About us"))
         self.actionAbout_us.setStatusTip(_translate("mainWindow", "About us"))
+
         self.actionHelp.setText(_translate("mainWindow", "Help"))
         self.actionHelp.setStatusTip(_translate("mainWindow", "Help"))
         self.actionHelp.setShortcut(_translate("mainWindow", "Ctrl+H"))
+
         self.actionOpen.setText(_translate("mainWindow", "Open"))
         self.actionOpen.setStatusTip(_translate("mainWindow", "Open a file"))
         self.actionOpen.setShortcut(_translate("mainWindow", "Ctrl+O"))
+
+        self.actionLoadPlaylist.setStatusTip(
+            _translate("mainWindow", "Loading a Playlist")
+        )
+        self.actionLoadPlaylist.setShortcut(_translate("mainWindow", "Ctrl+L"))
+        self.actionLoadPlaylist.setText(_translate("mainWindow", "Load Playlist"))
+
         self.actionSave.setText(_translate("mainWindow", "Save"))
         self.actionSave.setShortcut(_translate("mainWindow", "Ctrl+S"))
         self.actionSave.setStatusTip(_translate("mainWindow", "Save a Playlist"))
+
         self.actionExit.setText(_translate("mainWindow", "Exit"))
         self.actionExit.setShortcut(_translate("mainWindow", "Ctrl+X"))
-
-
-    #############################################################################################################
-    #############################################################################################################
-    
-
-    ##############################################################################################################
 
     def fast_forward(self):
         val = self.SongProgress.value()
@@ -269,9 +288,40 @@ class Ui_mainWindow(object):
         except:
             self.Song_name.setText("No file")
 
-    ##############################################################################################################
+    # to open a file
+    def Open_button_clicked(self):
+        global file
+        file = QFileDialog.getOpenFileName(None, None, None, "mp3(*.mp3)")
+
+        #  call the get length of file function to get and set the file length to the progress bar
+        self.Get_length_of_file()
+
+   
+
+
+
+    # to display the about us dialog box
+    def About_us_button_clicked(self):
+        dialog = QMessageBox(mainWindow)
+        dialog.setText("Hi, I'm Kalindu. I made this application. Hope you enjoy it.")
+        dialog.setWindowTitle("About Us")
+        dialog.setIcon(QMessageBox.Information)
+
+        # icons types : crtitcal, warning, information, question
+
+        dialog.exec_()
+
+   
+
+    # to save the current playlist
+    def Save_Playlist_clicked(self):
+        Saving_name = QFileDialog.getSaveFileName(None, None, "list(*.list)")
+        self.playlist.Save_playlist(self.playlist, Saving_name)
+
+   
+
     def Add_button_clicked(self):
-        file = QFileDialog.getOpenFileName(None,None,None,"mp3(*.mp3)")
+        file = QFileDialog.getOpenFileName(None, None, None, "mp3(*.mp3)")
         file = file[0]
 
         self.playlist.Add_to_playlist(file)
@@ -285,50 +335,47 @@ class Ui_mainWindow(object):
         file2 = file.split("/")
         file2 = file2[-1]
 
-
         QListWidgetItem(file2, self.listWidget)
 
-   
+    
 
-    def Open_button_clicked(self):
-        global file
-        file = QFileDialog.getOpenFileName(None,None,None,"mp3(*.mp3)")
+    # load a playlist ("*.list") file
+    def Load_Playlist_clicked(self):
+        global Loaded_PList
+        global CurrentSong
 
-        #  call the get length of file function to get and set the file length to the progress bar
-        self.Get_length_of_file()
+        CurrentSong = 0
 
-    ##############################################################################################################
+        Loaded_PList = QFileDialog.getOpenFileName(None, None, None, "list(*.list)")
+        Loaded_PList = Loaded_PList[0]
 
-    def About_us_button_clicked(self):
-        dialog = QMessageBox(mainWindow)
-        dialog.setText("Hi, I'm Kalindu. I made this application. Hope you enjoy it.")
-        dialog.setWindowTitle("About Us")
-        dialog.setIcon(QMessageBox.Information)
+        f = open(Loaded_PList, "r")
+        f = f.read()
+        f = f.split("!")
+        
+        self.playlist.Empty()
+        self.listWidget.clear()
+        
+        for i in range(len(f)):
+            song_name = f[i]
 
-        # icons types : crtitcal, warning, information, question
-
-        dialog.exec_()
-
-    ##############################################################################################################
-
-    def Save_Playlist_clicked(self):
-        Saving_name = QFileDialog.getSaveFileName(None, None, "list(*.list)")
-        self.playlist.Save_playlist(self.playlist, Saving_name)
-
+            self.playlist.Add_to_playlist(song_name)
+            
+            song_name = song_name.split("/")
+            song_name = song_name[-1]
+            
+            QListWidgetItem(song_name, self.listWidget)
+        
+        # print(f)
 
 
-
-
-    ##############################################################################################################
-
+    # to display the Help dialog box
     def Help_button_clicked(self):
         dialog = QMessageBox(mainWindow)
         dialog.setText("Load a song from open and click the play button.")
         dialog.setIcon(QMessageBox.Information)
         dialog.setWindowTitle("Help")
         dialog.exec_()
-
-    #############################################################################################################
 
     def Pause_button_clicked(self):
         global playing
@@ -341,25 +388,29 @@ class Ui_mainWindow(object):
             playing = True
             self.Player.play()
 
-    ###############################################################################################################
+
+
+
 
     def Play_button_clicked(self, playing_from_playlist):
         global file
         global playing
         global first_time_playing
-        
+
+
+
+            
         if playing_from_playlist == True:
             playing = True
 
             index = self.listWidget.currentRow()
             song = self.playlist.Playlist[index]
-            
+
             Url = QUrl.fromLocalFile(song)
             content = QMediaContent(Url)
-            
+
             self.Player.setMedia(content)
             self.Player.play()
-        
 
         if playing == False and first_time_playing != True:
             self.Player.pause()
@@ -383,12 +434,8 @@ class Ui_mainWindow(object):
             except:
                 self.Song_name.setText("No file")
 
-    ############################################################################################################
-
     def Stop_button_clicked(self):
         self.Player.stop()
-
-    ###########################################################################################################
 
     # change the volume value and set it as the volume
     def Change_volume_value(self):
@@ -398,8 +445,7 @@ class Ui_mainWindow(object):
 
         self.Player.setVolume(Volume_value)
 
-    ############################################################################################################
-
+    # for the songs song's progress bar
     def Get_length_of_file_for_playlist(self, file):
         global Song_time
 
@@ -412,7 +458,7 @@ class Ui_mainWindow(object):
         except:
             self.Song_name.setText("No file")
 
-
+    # get the length of the mp3 file for the song's progress bar
     def Get_length_of_file(self):
         global file
         global Song_time
@@ -426,23 +472,18 @@ class Ui_mainWindow(object):
         except:
             self.Song_name.setText("No file")
 
-
-    ############################################################################################################
-
+    # get the current time to display in the song's progessbar
     def Get_current_time(self, i):
         global Song_time
         global playing
 
         # to set the correct value we have to devide it by 1000
-        i = i/1000
+        i = i / 1000
         i = int(i)
 
         self.SongProgress.blockSignals(True)
         self.SongProgress.setValue(i)
         self.SongProgress.blockSignals(False)
-
-
-############################################################################################################
 
 
 if __name__ == "__main__":
