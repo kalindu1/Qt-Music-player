@@ -143,7 +143,14 @@ class Ui_mainWindow(object):
         font.setFamily("Calibri")
         font.setPointSize(14)
 
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(
+            QtGui.QPixmap("Res/Add.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off
+        )
+        
         self.Add_button.setFont(font)
+        self.Add_button.setIcon(icon4)
+        self.Add_button.setIconSize(QtCore.QSize(100, 100))
         self.Add_button.setAutoDefault(False)
         self.Add_button.setDefault(True)
         self.Add_button.setFlat(False)
@@ -251,7 +258,7 @@ class Ui_mainWindow(object):
         mainWindow.setWindowTitle(_translate("mainWindow", "MainWindow"))
         self.Song_name.setText(_translate("mainWindow", "Test"))
 
-        self.Add_button.setText(_translate("mainWindow", "Add"))
+        #self.Add_button.setText(_translate("mainWindow", "Add"))
 
         self.menuFile.setTitle(_translate("mainWindow", "File"))
         self.menuHelp.setTitle(_translate("mainWindow", "Help"))
